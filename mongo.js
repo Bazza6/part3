@@ -9,8 +9,7 @@ const password = process.argv[2]
 const name = process.argv[3]
 const number = process.argv[4]
 
-const url =
-    `mongodb+srv://nazarenovalentini:${password}@cluster0.rux8zu8.mongodb.net/phoneBookApp?retryWrites=true&w=majority`
+const url = `mongodb+srv://nazarenovalentini:${password}@cluster0.rux8zu8.mongodb.net/phoneBookApp?retryWrites=true&w=majority`
 
 mongoose.set('strictQuery', false)
 mongoose.connect(url)
@@ -27,17 +26,21 @@ const person = new Person({
     number: number,
 })
 if (name && number) {
-    person.save().then(result => {
-        console.log(`added ${name} number ${number} to phonebook`)
-        mongoose.connection.close()
-    })
+    person.save()
+        .then(result => {
+            console.log(`added ${name} number ${number} to phonebook`)
+            mongoose.connection.close()
+        })
 }
 else {
-    Person.find({}).then(result => {
-        console.log('Phonebook:');
-        result.forEach(person => {
-            console.log(person.name, person.number)
+    Person.find({})
+        .then(result => {
+            console.log('Phonebook:');
+            result.forEach(person => {
+                console.log(person.name, person.number)
+            })
+            mongoose.connection.close()
         })
-        mongoose.connection.close()
-    })
 }
+
+
