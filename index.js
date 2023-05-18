@@ -4,10 +4,10 @@ const cors = require('cors')
 const app = express()
 const Person = require('./models/person')
 var morgan = require('morgan')
+app.use(express.static('build'))
 app.use(express.json())
 app.use(morgan('tiny'))
 app.use(cors())
-app.use(express.static('build'))
 
 let persons = [
     {
@@ -31,6 +31,13 @@ let persons = [
         "number": "39-23-6423122"
     }
 ]
+const errorHandler = (error, request, response, next) => {
+    console.error(error.message)
+    if (error.name === 'CastError') {
+        return response.status(400).send({ error: 'malformatted id' })
+    }
+    next(error)
+}
 
 app.get('/info', (request, response) => {
     response.send(`<p>Phonebook has info for ${persons.length} people</p><p>${new Date()}</p>`)
@@ -44,10 +51,18 @@ app.get('/api/persons', (request, response) => {
 })
 
 app.get('/api/persons/:id', (request, response) => {
-    Person.findById(request.params.id).then(person => {
-        console.log('person :>> ', person);
-        response.json(person)
-    })
+    Person.findById(request.params.id)
+        .then(person => {
+            if (person) {
+                response.json(person)
+            } else {
+                response.status(404).end()
+            }
+        })
+        .catch(error => {
+            console.log(error)
+            response.status(400).send({ error: 'Malformatted id' })
+        })
 
     // const id = Number(request.params.id)
     // const person = persons.find(p => p.id === id)
@@ -59,10 +74,11 @@ app.get('/api/persons/:id', (request, response) => {
 })
 
 app.delete('/api/persons/:id', (request, response) => {
-    const id = Number(request.params.id)
-    const person = persons.find(p => p.id === id)
-    persons = persons.filter(p => p !== person)
-    response.status(204).end()
+    Person.findByIdAndRemove(request.params.id)
+        .then(result => {
+            response.status(204).end()
+        })
+        .catch(error => next(error))
 })
 
 const generateId = () => {
@@ -102,6 +118,8 @@ app.post('/api/persons', (request, response) => {
             response.json(savedPerson)
         })
 })
+
+app.use(errorHandler)
 
 const PORT = process.env.PORT
 app.listen(PORT, () => {
